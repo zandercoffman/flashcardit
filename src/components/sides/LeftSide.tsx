@@ -53,12 +53,12 @@ export default function LeftSide({
     pastSets,
     setPastSets,
     selected,
-    setAtIndex
+    setSelected
 }: {
     pastSets: Set[],
     setPastSets: Function,
-    selected: boolean[],
-    setAtIndex: Function
+    selected: number | null,
+    setSelected: Function
 }) {
 
     const [open, setOpen] = useState(false);
@@ -73,9 +73,9 @@ export default function LeftSide({
             reader.onload = (e) => {
                 const text = e.target?.result as string;
                 const { title, vocab } = parseCSV(text);
-                setPastSets((prevSets: any) => [
+                setPastSets((prevSets: Set[]) => [
                     ...prevSets,
-                    { title, vocab }
+                    { title: title, vocab: vocab }
                 ]);
                 setCsvData(vocab);
             };
@@ -95,17 +95,24 @@ export default function LeftSide({
         const lines = csvText.split("\n").filter(line => line.trim() !== "");
 
         if (lines.length < 2) {
-            throw new Error("CSV file is not formatted correctly.");
+            throw new Error("CSV file is not formatted correctly. Ensure it contains a title and at least one vocab pair.");
         }
 
         const title = lines[0].trim();
         const vocab: [string, string][] = lines.slice(1).map(line => {
             const values = line.split(",").map(value => value.trim());
-            return values.length === 2 ? [values[0], values[1]] as [string, string] : null;
+            // Check if we have exactly two values for each vocab pair
+            if (values.length === 2) {
+                return [values[0], values[1]] as [string, string];
+            } else {
+                console.warn(`Skipping invalid line: ${line}`);
+                return null;
+            }
         }).filter((pair): pair is [string, string] => pair !== null);
 
         return { title, vocab };
     };
+
 
     const FlashcardSets = () => (
         <>
@@ -178,12 +185,12 @@ export default function LeftSide({
                         className="w-full justify-between mb-2"
                         onClick={() => {
                             setOpen(false)
-                            setAtIndex(index)
+                            setSelected(index)
                         }}
                     >
                         {set.title}
                         {
-                            selected[index] == true && <MousePointerClick />
+                            selected == index && <MousePointerClick />
                         }
                     </Button>
                 ))}
