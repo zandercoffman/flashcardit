@@ -73,7 +73,7 @@
 }
 
 .flashcard {
-  height: 300px;
+  height: 260px;
   cursor: pointer;
   position: relative;
   transform-style: preserve-3d;

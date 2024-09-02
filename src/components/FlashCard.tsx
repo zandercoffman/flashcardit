@@ -17,7 +17,7 @@ const FlashCard = ({
   return (
     <div className="flashcard-container w-full" onClick={handleFlip}>
       <motion.div
-        className={`flashcard w-[300px] lg:w-[400px] text-2xl mx-auto ${isFlipped ? 'flipped' : ''}`}
+        className={`flashcard w-[260px] lg:w-[400px] text-2xl mx-auto ${isFlipped ? 'flipped' : ''}`}
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ duration: 0.6 }}
       >
