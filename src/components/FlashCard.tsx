@@ -21,8 +21,8 @@ const FlashCard = ({
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ duration: 0.6 }}
       >
-        <div className="flashcard-front">{front}</div>
-        <div className="flashcard-back">{back}</div>
+        <div className="flashcard-front p-3 ">{front}</div>
+        <div className="flashcard-back p-3 ">{back}</div>
       </motion.div>
     </div>
   );

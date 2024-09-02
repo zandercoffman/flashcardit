@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/carousel";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { BookCheck, BookOpen, BookX, EyeIcon, EyeOffIcon, Milestone, X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion } from 'framer-motion'
 import LetterPullup from "@/components/magicui/letter-pullup";
 import AnswerButton from "../AnswerButton";
@@ -26,6 +26,9 @@ import {
 import { Card } from "../ui/card";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+
+import type { ConfettiRef } from "@/components/magicui/confetti";
+import Confetti from "@/components/magicui/confetti";
 
 interface Set {
     title: string;
@@ -48,8 +51,8 @@ export default function RightSide({
 }) {
 
     const [api, setApi] = React.useState<CarouselApi>()
-    const [current, setCurrent] = React.useState(0)
-    const [count, setCount] = React.useState(0)
+    const [current, setCurrent] = React.useState(1)
+    const [count, setCount] = React.useState(1)
 
     const [answer1, setAnswer1] = useState<string | null>("he");
     const [answer2, setAnswer2] = useState<string | null>("b");
@@ -66,9 +69,54 @@ export default function RightSide({
         { word: 'metropolitan', hints: ['Large city and its surrounding areas', 'Major urban center', 'Often includes multiple municipalities'] },
     ]
 
-    const checkAnswer = (s: string) => {
+    const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+    const [isAttempted, setIsAttempted] = useState<boolean>(false);
 
-    }
+    const confettiRef = useRef<ConfettiRef>(null);
+
+    const handleAnswerClick = (answer: string) => {
+        if (selected !== null) {
+            setSelectedAnswer(answer);
+            setIsAttempted(true);
+            // Check if the answer is correct
+            const isCorrect = answer == pastSets[selected].vocab[current - 1][1];
+            if (isCorrect) {
+                confettiRef.current?.fire({});
+                confettiRef.current?.fire({});
+                return true;
+            }
+        }
+        return false;
+
+    };
+
+    useEffect(() => {
+        if (selected !== null && current !== null && pastSets.length !== 0) {
+            const set = pastSets[selected];
+            const vocab = set.vocab;
+            const correctAnswer = vocab[current - 1][1]; // Extract the correct answer
+            const incorrectAnswers = vocab
+                .filter((entry, index) => index !== current - 1) // Filter out the correct answer
+                .map(entry => entry[1]); // Extract only the answers
+
+            // Shuffle the incorrect answers and pick a few
+            const shuffledIncorrectAnswers = incorrectAnswers.sort(() => 0.5 - Math.random());
+            const numIncorrectAnswers = 3; // Number of incorrect answers to select
+            const selectedIncorrectAnswers = shuffledIncorrectAnswers.slice(0, numIncorrectAnswers);
+
+            // Combine the correct answer with the incorrect answers
+            const allAnswers = [correctAnswer, ...selectedIncorrectAnswers];
+
+            // Shuffle the answers
+            const shuffledAnswers = allAnswers.sort(() => 0.5 - Math.random());
+
+            // Assign shuffled answers to state variables
+            setAnswer1(shuffledAnswers[0]);
+            setAnswer2(shuffledAnswers[1]);
+            setAnswer3(shuffledAnswers[2]);
+            setAnswer4(shuffledAnswers[3]);
+        }
+    }, [current, pastSets, selected])
 
     const revealHint = (index: number) => {
         if (points >= 10) {
@@ -149,19 +197,33 @@ export default function RightSide({
                     </CarouselContent>
                     {
                         curMode == 'quiz' &&
-                        <motion.div
-                            initial={{ opacity: 0, y: 50 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{
-                                duration: 0.6,
-                                ease: [0.68, -0.55, 0.27, 1.55],
-                            }}
-                            className="h-full lg:h-[150px] mx-auto w-full lg:w-[600px] p-2 border rounded-xl grid grid-cols-1 grid-rows-4 lg:grid-cols-2 lg:grid-rows-2 gap-2"
-                        >
-                            {[answer1, answer2, answer3, answer4].filter((ans) => ans != null).map((item, index) => (
-                                <AnswerButton item={item} index={index} key={index} />
-                            ))}
-                        </motion.div>
+                        <>
+                            <Confetti
+                                ref={confettiRef}
+                                className="absolute left-0 top-0 z-0 size-full"
+                            />
+                            <motion.div
+                                initial={{ opacity: 0, y: 50 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{
+                                    duration: 0.6,
+                                    ease: [0.68, -0.55, 0.27, 1.55],
+                                }}
+                                className="h-full lg:h-[200px] mx-auto w-full lg:w-[600px] p-2 border rounded-xl grid grid-cols-1 grid-rows-4 lg:grid-cols-2 lg:grid-rows-2 gap-2"
+                            >
+                                {[answer1, answer2, answer3, answer4].filter(ans => ans != null).map((item, index) => (
+                                    <AnswerButton
+                                        item={item}
+                                        index={index}
+                                        key={index}
+                                        isCorrect={item === pastSets[selected].vocab[current - 1][1] && selectedAnswer === item}
+                                        onClick={() => handleAnswerClick(item)}
+                                        current={current}
+                                    />
+                                ))}
+                            </motion.div>
+                        </>
+
                     }
                     {
                         curMode == 'test' && <>
@@ -203,10 +265,10 @@ export default function RightSide({
                         </>
                     }
                     <CarouselPrevious
-                        className={"absolute left-0 top-1/2 transform -translate-y-1/2"}
+                        className={"absolute left-0 top-32 lg:top-1/2 transform -translate-y-1/2"}
                     />
                     <CarouselNext
-                        className={"absolute right-0 top-1/2 transform -translate-y-1/2"}
+                        className={"absolute right-0 top-32 lg:top-1/2 transform -translate-y-1/2"}
                     />
 
                 </Carousel>
@@ -215,7 +277,6 @@ export default function RightSide({
 
 
             </div>
-            {current}
             <ToggleGroup
                 type="single"
                 className="absolute top-11 lg:top-0 right-0 border h-12 w-30 mt-3 mr-6 rounded-xl px-1"
