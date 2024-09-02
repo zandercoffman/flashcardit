@@ -66,7 +66,6 @@ import { saveAs } from 'file-saver';
 // Define the Set interface
 interface Set {
     title: string;
-    id: string;
     vocab: [string, string][]; // Array of tuples with two strings
 }
 
@@ -177,7 +176,7 @@ export default function LeftSide({
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({vocab: set.vocab})
+                body: JSON.stringify({ vocab: set.vocab })
             })
 
             if (!response.ok) {
@@ -198,7 +197,7 @@ export default function LeftSide({
         } finally {
             setDownloading(false);
         }
-        
+
     }
 
 
@@ -282,8 +281,16 @@ export default function LeftSide({
                         <SheetTitle>Create New Flashcard Set</SheetTitle>
                         <SheetDescription>Enter the details for your new flashcard set.</SheetDescription>
                     </SheetHeader>
-                    <Accordion type="single" collapsible className="w-full max-w-md" defaultValue="ai-generate">
-                        <AccordionItem value="ai-generate">
+                    <Accordion type="single" collapsible className="w-full max-w-md" defaultValue="upload-create">
+                        <AccordionItem value="upload-create">
+                            <AccordionTrigger>Paste Made File</AccordionTrigger>
+                            <AccordionContent>
+
+                            </AccordionContent>
+                        </AccordionItem>
+                        {
+                            /**
+                             * <AccordionItem value="ai-generate">
                             <AccordionTrigger>Generate with AI</AccordionTrigger>
                             <AccordionContent>
                                 <div className="space-y-4">
@@ -297,6 +304,8 @@ export default function LeftSide({
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
+                             */
+                        }
                         <AccordionItem value="manual-create">
                             <AccordionTrigger>Create New Flashcard Set</AccordionTrigger>
                             <AccordionContent>
@@ -414,6 +423,7 @@ export default function LeftSide({
                                                     }}><ArrowDownToLine /> Download</Button>
                                                     <Button className="w-min flex flex-row gap-1 !bg-white !text-black" onClick={() => {
                                                         getRidOfSet(index)
+                                                        
                                                         toast({
                                                             title: "Successfully deleted."
                                                         })

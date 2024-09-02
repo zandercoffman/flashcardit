@@ -29,10 +29,15 @@ import { Button } from "../ui/button";
 
 import type { ConfettiRef } from "@/components/magicui/confetti";
 import Confetti from "@/components/magicui/confetti";
+import { vocabularySets, allFilters } from "../../../public/exampleSets";
+import { cn } from "@/lib/utils";
+import { ScrollArea } from "../ui/scroll-area";
+import Marquee from "../magicui/marquee";
+import { Separator } from "@/components/ui/separator"
+
 
 interface Set {
     title: string;
-    id: string;
     vocab: [string, string][]; // Array of tuples with two strings
 }
 
@@ -41,13 +46,15 @@ export default function RightSide({
     selected = null,
     getRidOfSet,
     setMode,
-    curMode
+    curMode,
+    setSelected
 }: {
     pastSets: Set[],
     selected: number | null,
     getRidOfSet: Function,
     setMode: Function,
-    curMode: 'normal' | 'test' | 'quiz'
+    curMode: 'normal' | 'test' | 'quiz',
+    setSelected: Function
 }) {
 
     const [api, setApi] = React.useState<CarouselApi>()
@@ -91,30 +98,34 @@ export default function RightSide({
     };
 
     useEffect(() => {
-        if (selected !== null && current !== null && pastSets.length !== 0) {
+        if (selected !== null && current !== null) {
             const set = pastSets[selected];
-            const vocab = set.vocab;
-            const correctAnswer = vocab[current - 1][1]; // Extract the correct answer
-            const incorrectAnswers = vocab
-                .filter((entry, index) => index !== current - 1) // Filter out the correct answer
-                .map(entry => entry[1]); // Extract only the answers
+            if (set) {
+                const vocab = set.vocab;
+                const correctAnswer = vocab[current - 1][1]; // Extract the correct answer
+                const incorrectAnswers = vocab
+                    .filter((entry, index) => index !== current - 1) // Filter out the correct answer
+                    .map(entry => entry[1]); // Extract only the answers
 
-            // Shuffle the incorrect answers and pick a few
-            const shuffledIncorrectAnswers = incorrectAnswers.sort(() => 0.5 - Math.random());
-            const numIncorrectAnswers = 3; // Number of incorrect answers to select
-            const selectedIncorrectAnswers = shuffledIncorrectAnswers.slice(0, numIncorrectAnswers);
+                // Shuffle the incorrect answers and pick a few
+                const shuffledIncorrectAnswers = incorrectAnswers.sort(() => 0.5 - Math.random());
+                const numIncorrectAnswers = 3; // Number of incorrect answers to select
+                const selectedIncorrectAnswers = shuffledIncorrectAnswers.slice(0, numIncorrectAnswers);
 
-            // Combine the correct answer with the incorrect answers
-            const allAnswers = [correctAnswer, ...selectedIncorrectAnswers];
+                // Combine the correct answer with the incorrect answers
+                const allAnswers = [correctAnswer, ...selectedIncorrectAnswers];
 
-            // Shuffle the answers
-            const shuffledAnswers = allAnswers.sort(() => 0.5 - Math.random());
+                // Shuffle the answers
+                const shuffledAnswers = allAnswers.sort(() => 0.5 - Math.random());
 
-            // Assign shuffled answers to state variables
-            setAnswer1(shuffledAnswers[0]);
-            setAnswer2(shuffledAnswers[1]);
-            setAnswer3(shuffledAnswers[2]);
-            setAnswer4(shuffledAnswers[3]);
+                // Assign shuffled answers to state variables
+                setAnswer1(shuffledAnswers[0]);
+                setAnswer2(shuffledAnswers[1]);
+                setAnswer3(shuffledAnswers[2]);
+                setAnswer4(shuffledAnswers[3]);
+            }
+
+
         }
     }, [current, pastSets, selected])
 
@@ -142,34 +153,99 @@ export default function RightSide({
         })
     }, [api])
 
-    if (pastSets.length == 0) {
+    if (pastSets.length == 0 || selected == null || typeof pastSets[selected] == 'undefined') {
         return <>
-            <div className="size-full grid place-items-center">
-                <div>
-                    <BookX className="w-12 h-12 mb-4 text-muted-foreground" />
-                    <h2 className="text-2xl font-semibold mb-2">No Flash Card Sets</h2>
-                    <p className="text-muted-foreground">
-                        You haven{"'"}t created any flash card sets yet. Start by creating your first set to begin studying!
-                    </p>
-                </div>
-            </div>
+            <ScrollArea className="h-[80vh] lg:h-screen pt-10">
+                {
+                    ((selected == null || typeof pastSets[selected] == 'undefined') && pastSets.length > 0) && <>
+                            <div className="size-full grid place-items-start mx-20 mb-6">
+                                <div className="flex items-center justify-start mb-4">
+                                    <div className="bg-muted p-2 rounded-md">
+                                        <X className="h-6 w-6 text-muted-foreground" />
+                                    </div>
+                                </div>
+                                <h2 className="text-2xl font-bold mb-2 text-foreground">No Selected Card Set</h2>
+                                <p className="text-muted-foreground">
+                                    You haven{"'"}t selected any flash card sets yet. Start by selecting your set to begin!
+                                </p>
+                            </div>
+                        </>
+                }
+                <Carousel className="w-full lg:w-[88%] mx-auto mb-10" opts={{
+                    align: "start",
+                    loop: true,
+                }}>
+                    <h1 className="mb-2 font-semibold text-3xl ">All Sets</h1>
+                    <CarouselContent className="gap-3">
+                        {vocabularySets.map((set, index) => {
+                            return <CarouselItem key={index} className=" flex flex-col pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3 relative w-32 cursor-pointer overflow-hidden rounded-xl border p-4 border-gray-950/[.1] bg-gray-950/[.01] hover:bg-gray-950/[.05] dark:border-gray-50/[.1] dark:bg-gray-50/[.10] dark:hover:bg-gray-50/[.15] transform-gpu blur-[0.8px] transition-all duration-300 ease-out hover:blur-none">
+                                <Marquee pauseOnHover className="[--duration:30s]">
+                                    {set.vocab.map((vocab, index) => {
+                                        return <div key={index} className="border-gray-950/[.1] p-2">
+                                            {vocab[0]}
+                                        </div>
+                                    })}
+                                </Marquee>
+                                <Marquee reverse pauseOnHover className="[--duration:30s]">
+                                    {set.vocab.map((vocab, index) => {
+                                        return <div key={index} className="border-gray-950/[.1] p-2">
+                                            {vocab[1]}
+                                        </div>
+                                    })}
+                                </Marquee>
+                                <span className="font-semibold text-lg leading-6">
+                                    {set.title}
+                                </span>
+                            </CarouselItem>
+                        })}
+                    </CarouselContent>
+                    <CarouselPrevious />
+                    <CarouselNext />
+                </Carousel>
+                <h1 className="mb-2 font-semibold text-2xl text-gray-700 mx-10">Explore All Sets</h1>
+                <Separator />
+               
+                {allFilters.map((filter) => {
+                    return <Carousel key={filter} className="w-full lg:w-[88%] mx-auto my-6" opts={{
+                        align: "start",
+                        loop: true,
+                    }}>
+                        <h1 className="mb-2 font-semibold text-3xl ">{filter}</h1>
+                        <CarouselContent className="flex flex-row gap-3">
+                            {
+                                vocabularySets.filter((set) => set.filters.includes(filter)).map((set, index) => {
+                                    return <CarouselItem key={index} className=" flex flex-col pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3 relative w-32 cursor-pointer overflow-hidden rounded-xl border p-4 border-gray-950/[.1] bg-gray-950/[.01] hover:bg-gray-950/[.05] dark:border-gray-50/[.1] dark:bg-gray-50/[.10] dark:hover:bg-gray-50/[.15] transform-gpu blur-[0.8px] transition-all duration-300 ease-out hover:blur-none">
+                                        
+                                        <div className="w-full flex flex-row justify-between overflow-hidden pl-2 pr-4 pb-2">
+                                            <div className="flex flex-col h-full gap-5 justify-between">
+                                                <span>{set.vocab[0][0]}</span>
+                                                <span>{set.vocab[0][1]}</span>
+                                            </div>
+                                            <div className="flex flex-col h-full justify-between">
+                                                <span>{set.vocab[1][0]}</span>
+                                                <span>{set.vocab[1][1]}</span>
+                                            </div>
+                                            <div className="flex flex-col h-full justify-between">
+                                                <span>{set.vocab[2][0]}</span>
+                                                <span>{set.vocab[2][1]}</span>
+                                            </div>
+                                        </div>
+                                        <span className="font-semibold text-lg leading-6">
+                                            {set.title}
+                                        </span>
+                                    </CarouselItem>
+                                })
+                            }
+                        </CarouselContent>
+                        <CarouselPrevious />
+                        <CarouselNext />
+                    </Carousel>
+                })}
+            </ScrollArea>
         </>
     }
 
-    if (selected == null)
-        return <>
-            <div className="size-full grid place-items-start mx-40">
-                <div className="flex items-center justify-start mb-4">
-                    <div className="bg-muted p-2 rounded-md">
-                        <X className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                </div>
-                <h2 className="text-2xl font-bold mb-2 text-foreground">No Selected Card Set</h2>
-                <p className="text-muted-foreground">
-                    You haven{"'"}t selected any flash card sets yet. Start by selecting your set to begin!
-                </p>
-            </div>
-        </>
+    
 
     return (
         <>
@@ -185,7 +261,7 @@ export default function RightSide({
                 >
                     <CarouselContent className="flex">
                         {
-                            pastSets[selected].vocab.map((vocab: [string, string]) => {
+                            selected !== null && pastSets[selected].vocab.map((vocab: [string, string]) => {
                                 return <>
                                     <CarouselItem className="flex-shrink-0 w-full md:w-96 p-2">
                                         <FlashCard front={vocab[0]} back={vocab[1]} />

@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 
 interface Set {
   title: string;
-  id: string;
   vocab: [string, string][]; // Array of tuples with two strings
 }
 
@@ -18,7 +17,11 @@ export default function Home() {
   const [curMode, setMode] = useState<Mode>('normal');
 
   const getRidOfSet = (index: number) => {
-    setPastSets(prevSets => prevSets.filter((_, i) => i !== index));
+    setSelected(null);
+    
+    setTimeout(() => {
+      setPastSets(prevSets => prevSets.filter((_, i) => i !== index));
+    }, 100);
   }
 
   return (
@@ -41,6 +44,7 @@ export default function Home() {
           getRidOfSet={getRidOfSet}
           setMode={setMode}
           curMode={curMode}
+          setSelected={setSelected}
         />
       </div>
     </main>
