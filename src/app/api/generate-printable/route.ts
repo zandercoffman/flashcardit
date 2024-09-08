@@ -14,12 +14,13 @@ export async function POST(req: NextRequest) {
         const pdfDoc = await PDFDocument.create();
 
         // Embed a standard font
-        const font = await pdfDoc.embedFont(StandardFonts.Helvetica); // Using Helvetica for a clean look
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
         // Define font size, padding, and margin
         const fontSize = 24;
-        const padding = 20;
-        const lineMargin = 200; // Additional margin between lines
+        const verticalMargin = 180;  // Increase vertical margin between vocab words
+        const lineMargin = 10;
+        const leftRightPadding = 50; // Left and right padding to create horizontal margins
 
         // Function to create a new page
         const createNewPage = () => {
@@ -38,48 +39,88 @@ export async function POST(req: NextRequest) {
         // Create the first page
         let page = createNewPage();
         const { width, height } = page.getSize();
-        let yPosition = height - padding;
+        let yPosition = height - verticalMargin; // Start at the top with some extra vertical margin
 
         // Function to get text width
-        const getTextWidth = (text: string) => {
-            return font.widthOfTextAtSize(text, fontSize);
+        const getTextWidth = (text: string, size: number) => {
+            return font.widthOfTextAtSize(text, size);
+        };
+
+        // Function to split text into multiple lines based on page width
+        const splitTextIntoLines = (text: string, maxWidth: number, size: number) => {
+            const words = text.split(' ');
+            let currentLine = '';
+            const lines = [];
+
+            words.forEach((word) => {
+                const newLine = currentLine.length ? currentLine + ' ' + word : word;
+                if (getTextWidth(newLine, size) > maxWidth) {
+                    lines.push(currentLine);
+                    currentLine = word;
+                } else {
+                    currentLine = newLine;
+                }
+            });
+
+            if (currentLine.length) {
+                lines.push(currentLine);
+            }
+
+            return lines;
         };
 
         // Loop through the vocab array and add each pair to the page
         body.vocab.forEach(([word, description], index) => {
             // Check if the current position will overflow
-            if (yPosition - fontSize - lineMargin < padding) {
+            if (yPosition - fontSize - lineMargin - verticalMargin < verticalMargin) {
                 // If it overflows, create a new page and reset yPosition
                 page = createNewPage();
-                yPosition = height - padding;
+                yPosition = height - verticalMargin;
             }
 
-            // Calculate y position for the current line
-            yPosition -= (fontSize + lineMargin);
+            // Calculate text sizes
+            const wordFontSize = word.length > 33 ? 16 : fontSize;
+            const descriptionFontSize = description.length > 50 ? 16 : fontSize;
 
-            // Calculate x positions for centered text
-            const wordWidth = getTextWidth(word);
-            const descriptionWidth = getTextWidth(description);
-            const xPositionWord = (width - (wordWidth * 2)) / 3;
-            const xPositionDescription = (width + (width / 2) - descriptionWidth) / 2;
+            // Split the description into lines if it's too wide
+            const wordWidth = getTextWidth(word, wordFontSize);
+            const descriptionLines = splitTextIntoLines(description, width / 2 - leftRightPadding, descriptionFontSize);
 
-            // Draw the word on the left, centered horizontally
+            // Calculate x positions for text
+            const xPositionWord = leftRightPadding; // Add left padding
+            const xPositionDescription = width / 2 + leftRightPadding; // Add right padding
+
+            // Draw the word on the left
             page.drawText(word, {
                 x: xPositionWord,
                 y: yPosition,
-                size: word.length > 33 ? 10 : fontSize,
+                size: wordFontSize,
                 font: font,
                 color: rgb(0, 0, 0), // black text
             });
 
-            // Draw the description on the right, centered horizontally
-            page.drawText(description, {
-                x: xPositionDescription,
-                y: yPosition,
-                size: fontSize,
-                font: font,
-                color: rgb(0, 0, 0), // black text
+            // Draw each line of the description on the right
+            descriptionLines.forEach((line) => {
+                if (yPosition - descriptionFontSize - lineMargin < verticalMargin) {
+                    // Create a new page if the text overflows
+                    page = createNewPage();
+                    yPosition = height - verticalMargin;
+                }
+
+                page.drawText(line, {
+                    x: xPositionDescription,
+                    y: yPosition,
+                    size: descriptionFontSize,
+                    font: font,
+                    color: rgb(0, 0, 0), // black text
+                });
+
+                // Adjust yPosition for the next line
+                yPosition -= descriptionFontSize + lineMargin;
             });
+
+            // Adjust yPosition for the next pair of word and description, adding vertical margin
+            yPosition -= fontSize + verticalMargin;
         });
 
         // Serialize the PDFDocument to bytes (a Uint8Array)

@@ -34,6 +34,9 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "../ui/scroll-area";
 import Marquee from "../magicui/marquee";
 import { Separator } from "@/components/ui/separator"
+import ShineBorder from "../magicui/shine-border";
+import { BorderBeam } from "../magicui/border-beam";
+import { Badge } from "../ui/badge";
 
 
 interface Set {
@@ -158,94 +161,56 @@ export default function RightSide({
             <ScrollArea className="h-[80vh] lg:h-screen pt-10">
                 {
                     ((selected == null || typeof pastSets[selected] == 'undefined') && pastSets.length > 0) && <>
-                            <div className="size-full grid place-items-start mx-20 mb-6">
-                                <div className="flex items-center justify-start mb-4">
-                                    <div className="bg-muted p-2 rounded-md">
-                                        <X className="h-6 w-6 text-muted-foreground" />
-                                    </div>
+                        <div className="size-full grid place-items-start lg:mx-10 mb-6 mt-8">
+                            <div className="flex items-center justify-start mb-4">
+                                <div className="bg-muted p-2 rounded-md">
+                                    <X className="h-6 w-6 text-muted-foreground" />
                                 </div>
-                                <h2 className="text-2xl font-bold mb-2 text-foreground">No Selected Card Set</h2>
-                                <p className="text-muted-foreground">
-                                    You haven{"'"}t selected any flash card sets yet. Start by selecting your set to begin!
-                                </p>
                             </div>
-                        </>
-                }
-                <Carousel className="w-full lg:w-[88%] mx-auto mb-10" opts={{
-                    align: "start",
-                    loop: true,
-                }}>
-                    <h1 className="mb-2 font-semibold text-3xl ">All Sets</h1>
-                    <CarouselContent className="gap-3">
-                        {vocabularySets.map((set, index) => {
-                            return <CarouselItem key={index} className=" flex flex-col pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3 relative w-32 cursor-pointer overflow-hidden rounded-xl border p-4 border-gray-950/[.1] bg-gray-950/[.01] hover:bg-gray-950/[.05] dark:border-gray-50/[.1] dark:bg-gray-50/[.10] dark:hover:bg-gray-50/[.15] transform-gpu blur-[0.8px] transition-all duration-300 ease-out hover:blur-none">
-                                <Marquee pauseOnHover className="[--duration:30s]">
-                                    {set.vocab.map((vocab, index) => {
-                                        return <div key={index} className="border-gray-950/[.1] p-2">
-                                            {vocab[0]}
-                                        </div>
-                                    })}
-                                </Marquee>
-                                <Marquee reverse pauseOnHover className="[--duration:30s]">
-                                    {set.vocab.map((vocab, index) => {
-                                        return <div key={index} className="border-gray-950/[.1] p-2">
-                                            {vocab[1]}
-                                        </div>
-                                    })}
-                                </Marquee>
-                                <span className="font-semibold text-lg leading-6">
-                                    {set.title}
-                                </span>
-                            </CarouselItem>
-                        })}
-                    </CarouselContent>
-                    <CarouselPrevious />
-                    <CarouselNext />
-                </Carousel>
-                <h1 className="mb-2 font-semibold text-2xl text-gray-700 mx-10">Explore All Sets</h1>
-                <Separator />
-               
-                {allFilters.map((filter) => {
-                    return <Carousel key={filter} className="w-full lg:w-[88%] mx-auto my-6" opts={{
-                        align: "start",
-                        loop: true,
-                    }}>
-                        <h1 className="mb-2 font-semibold text-3xl ">{filter}</h1>
-                        <CarouselContent className="flex flex-row gap-3">
+                            <h2 className="text-2xl font-bold mb-2 text-foreground">No Selected Card Set</h2>
+                            <p className="text-muted-foreground">
+                                You haven{"'"}t selected any flash card sets yet. Start by selecting your set to begin!
+                            </p>
+                        </div>
+                        <div className="w-screen lg:w-[70vw] mx-auto grid mb-24 gap-4"
+                            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))' }}>
                             {
-                                vocabularySets.filter((set) => set.filters.includes(filter)).map((set, index) => {
-                                    return <CarouselItem key={index} className=" flex flex-col pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3 relative w-32 cursor-pointer overflow-hidden rounded-xl border p-4 border-gray-950/[.1] bg-gray-950/[.01] hover:bg-gray-950/[.05] dark:border-gray-50/[.1] dark:bg-gray-50/[.10] dark:hover:bg-gray-50/[.15] transform-gpu blur-[0.8px] transition-all duration-300 ease-out hover:blur-none">
-                                        
-                                        <div className="w-full flex flex-row justify-between overflow-hidden pl-2 pr-4 pb-2">
-                                            <div className="flex flex-col h-full gap-5 justify-between">
-                                                <span>{set.vocab[0][0]}</span>
-                                                <span>{set.vocab[0][1]}</span>
-                                            </div>
-                                            <div className="flex flex-col h-full justify-between">
-                                                <span>{set.vocab[1][0]}</span>
-                                                <span>{set.vocab[1][1]}</span>
-                                            </div>
-                                            <div className="flex flex-col h-full justify-between">
-                                                <span>{set.vocab[2][0]}</span>
-                                                <span>{set.vocab[2][1]}</span>
-                                            </div>
-                                        </div>
-                                        <span className="font-semibold text-lg leading-6">
+                                pastSets.slice(0, 2).map((set: Set, index) => {
+                                    return <div className="border-2 shadow-xl p-8 rounded-xl h-[200px] overflow-hidden" key={index}>
+                                        <h1 className="whitespace-nowrap font-semibold">
                                             {set.title}
-                                        </span>
-                                    </CarouselItem>
+                                        </h1>
+                                        <div className="flex flex-row gap-2 mt-auto">
+                                            <Button className="mt-auto">Click Me</Button>
+                                            <Badge>{}</Badge>
+                                        </div>
+                                    </div>
                                 })
                             }
-                        </CarouselContent>
-                        <CarouselPrevious />
-                        <CarouselNext />
-                    </Carousel>
-                })}
+                        </div>
+
+                        <Separator />
+                    </>
+                }
+                <div className="w-screen lg:w-[74vw] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {vocabularySets.map((set, index) => {
+                        return (
+                            <div
+                                key={index}
+                                className="shadow-xl p-3 rounded-xl cursor-pointer border h-[220px]"
+                            >
+                                <div>
+                                    {set.title}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </ScrollArea>
         </>
     }
 
-    
+
 
     return (
         <>

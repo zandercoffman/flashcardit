@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Ellipsis, Info, Milestone, MousePointerClick, PlusCircle, Terminal, Trash2, History, ClipboardCopy, X, Sparkles, BookOpen, BrainCircuit, Clock, Copy, AlignLeft, ArrowDownToLine, Loader, Loader2 } from "lucide-react";
+import { Ellipsis, Info, Milestone, MousePointerClick, PlusCircle, Terminal, Trash2, History, ClipboardCopy, X, Sparkles, BookOpen, BrainCircuit, Clock, Copy, AlignLeft, ArrowDownToLine, Loader, Loader2, Upload, ArrowRightIcon } from "lucide-react";
 import {
     Drawer,
     DrawerClose,
@@ -62,6 +62,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Roboto } from "next/font/google";
 import { Slider } from "@/components/ui/slider"
 import { saveAs } from 'file-saver';
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import {
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form"
+import ThemeSwitcher from "../ThemeSwitcher";
+import AnimatedShinyText from "@/components/magicui/animated-shiny-text";
+
+const formSchema = z.object({
+    text: z.string().min(1)
+})
 
 // Define the Set interface
 interface Set {
@@ -83,6 +101,13 @@ export default function LeftSide({
     getRidOfSet: Function
 }) {
 
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            text: "",
+        },
+    })
+
     const [open, setOpen] = useState(false);
     const [csvData, setCsvData] = useState<string[][]>([]);
     const { toast } = useToast()
@@ -100,25 +125,58 @@ export default function LeftSide({
         }
     }, [])
 
+    function onSubmit(values: z.infer<typeof formSchema>) {
+        var text = values.text.replace("\n", "").trim();
+        if (text.charAt(0) != '{')
+            text = `{ ${text}`;
+
+        if (text.charAt(text.length - 1) != '}')
+            text = `${text} }`;
+
+        try {
+            const obj = JSON.parse(text) as Set;
+            setPastSets((prevSets: Set[]) => [
+                ...prevSets,
+                obj
+            ]);
+            toast({
+                title: "Successfully imported file.",
+                description: "Have a good time studying.",
+                action: <ToastAction altText="Study Now">Study Now</ToastAction>,
+            });
+        } catch (err: any) {
+            toast({
+                title: "There was an error.",
+                description: err.message,
+                variant: "destructive"
+            });
+        }
+    }
+
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
 
-        if (file && file.type === "text/csv") {
+        if (file && file.type === "application/json") {
             const reader = new FileReader();
 
             reader.onload = (e) => {
-                const text = e.target?.result as string;
-                const { title, vocab } = parseCSV(text);
-                setPastSets((prevSets: Set[]) => [
-                    ...prevSets,
-                    { title: title, id: generateId(), vocab: vocab }
-                ]);
-                toast({
-                    title: "Successfully imported file.",
-                    description: "Have a good time studying.",
-                    action: <ToastAction altText="Study Now">Study Now</ToastAction>,
-                })
-                setCsvData(vocab);
+                try {
+                    const text = e.target?.result as string;
+                    const { title, vocab } = parseJSON(text);
+                    setPastSets((prevSets: Set[]) => [
+                        ...prevSets,
+                        { title: title, id: generateId(), vocab: vocab }
+                    ]);
+                    toast({
+                        title: "Successfully imported file.",
+                        description: "Have a good time studying.",
+                        action: <ToastAction altText="Study Now">Study Now</ToastAction>,
+                    });
+                    setCsvData(vocab);
+                } catch (error) {
+                    console.error("Failed to parse JSON file:", error);
+                    alert("The JSON file is not formatted correctly.");
+                }
             };
 
             reader.onerror = () => {
@@ -128,31 +186,30 @@ export default function LeftSide({
 
             reader.readAsText(file);
         } else {
-            alert("Please upload a valid CSV file.");
+            alert("Please upload a valid JSON file.");
         }
     };
 
-    const parseCSV = (csvText: string): { title: string; vocab: [string, string][] } => {
-        const lines = csvText.split("\n").filter(line => line.trim() !== "");
+    const parseJSON = (jsonText: string): { title: string; vocab: [string, string][] } => {
+        try {
+            const parsedData = JSON.parse(jsonText) as Set;
 
-        if (lines.length < 2) {
-            throw new Error("CSV file is not formatted correctly. Ensure it contains a title and at least one vocab pair.");
-        }
-
-        const title = lines[0].trim();
-        const vocab: [string, string][] = lines.slice(1).map(line => {
-            const values = line.split(",").map(value => value.trim());
-            // Check if we have exactly two values for each vocab pair
-            if (values.length === 2) {
-                return [values[0], values[1]] as [string, string];
-            } else {
-                console.warn(`Skipping invalid line: ${line}`);
-                return null;
+            // Validate the JSON structure
+            if (typeof parsedData.title !== 'string' || !Array.isArray(parsedData.vocab)) {
+                throw new Error("Invalid JSON format.");
             }
-        }).filter((pair): pair is [string, string] => pair !== null);
 
-        return { title, vocab };
+            // Check if vocab pairs are in the correct format
+            const vocab = parsedData.vocab.filter(pair =>
+                Array.isArray(pair) && pair.length === 2 && typeof pair[0] === 'string' && typeof pair[1] === 'string'
+            ) as [string, string][];
+
+            return { title: parsedData.title, vocab };
+        } catch (error: any) {
+            throw new Error("Failed to parse JSON: " + error.message);
+        }
     };
+
 
     const truncateText = (text: string) => {
         if (text.length <= 25) return text;
@@ -163,6 +220,7 @@ export default function LeftSide({
     const [words, setWords] = useState<[string, string][]>([['', '']])
     const [flashcardSets, setFlashcardSets] = useState<{ name: string, words: [string, string][] }[]>([])
     const [downloading, setDownloading] = useState<boolean>(false);
+    const [isHovered, setIsHovered] = useState(false)
 
     const addWordPair = () => {
         setWords([...words, ['', '']])
@@ -228,6 +286,7 @@ export default function LeftSide({
                     <h2 className="text-1xl font-bold">flashcard/it</h2>
                     <Badge className="h-fit">.vercel.app</Badge>
                 </div>
+                <ThemeSwitcher />
                 <Dialog>
                     <DialogTrigger className="flex flex-row gap-2">
                         <Info />
@@ -285,7 +344,30 @@ export default function LeftSide({
                         <AccordionItem value="upload-create">
                             <AccordionTrigger>Paste Made File</AccordionTrigger>
                             <AccordionContent>
-
+                                <Form {...form}>
+                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                                        <FormField
+                                            control={form.control}
+                                            name="text"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>File</FormLabel>
+                                                    <FormControl>
+                                                        <Textarea placeholder="Paste your made file here." {...field} className="h-[200px] resize-none" />
+                                                    </FormControl>
+                                                    <FormDescription>
+                                                        This is your pre-made file. Click the information icon to learn more.
+                                                    </FormDescription>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <Button type="submit">
+                                            <Upload className="mr-2 h-4 w-4" />
+                                            <span>Submit Your File</span>
+                                        </Button>
+                                    </form>
+                                </Form>
                             </AccordionContent>
                         </AccordionItem>
                         {
@@ -365,7 +447,9 @@ export default function LeftSide({
                         <div className="w-full lg:w-[20vw] h-[60vh] grid place-items-center">
                             <div className="flex flex-col items-center gap-1">
                                 <Loader2 className="size-16 text-gray-400 animate-spin" />
-                                <span className="font-semibold text-gray-400">Generating...</span>
+                                <AnimatedShinyText className="inline-flex items-center justify-center px-4 py-1 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400">
+                                    <span>Downloading..</span>
+                                </AnimatedShinyText>
                             </div>
                         </div>
                     </> : <>
@@ -423,7 +507,7 @@ export default function LeftSide({
                                                     }}><ArrowDownToLine /> Download</Button>
                                                     <Button className="w-min flex flex-row gap-1 !bg-white !text-black" onClick={() => {
                                                         getRidOfSet(index)
-                                                        
+
                                                         toast({
                                                             title: "Successfully deleted."
                                                         })
@@ -540,7 +624,7 @@ function AIPart() {
 
 
     const prompts = {
-        table: "From this image, make an .csv file that is formatted in this way: \n\n[title of material] \n[word1], [word2] \n[word3], [word4] \n\nMake sure, if any of the words have \",\" in it, replace it with \"/\"",
+        table: "I want you to create a vocabulary set from the image I upload. Analyze the image and generate a list of words or phrases that describe key objects, actions, or concepts within the image, along with their definitions or explanations.\n\nGenerate a JSON file in the format of this interface: interface Set {\n\ttitle: string;\n\tvocab: [string, string][];\n}",
         paragraph: "From this image, make flash card vocab based on this page, make it into a .csv file formatted like: \n[title of material]\n[word1], [word2]\n[word3], [word4] \n\nMake sure, if any of the words have \",\" in it, replace it with \"/\""
     }
 
@@ -575,7 +659,7 @@ function AIPart() {
                     <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="table" className="flex items-center justify-center">
                             <AlignLeft className="h-4 w-4 mr-2" />
-                            Vocabulary Format
+                            From Photo
                         </TabsTrigger>
                         <TabsTrigger value="paragraph" className="flex items-center justify-center">
                             <AlignLeft className="h-4 w-4 mr-2" />
