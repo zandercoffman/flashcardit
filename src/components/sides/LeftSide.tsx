@@ -288,7 +288,7 @@ export default function LeftSide({
                 </div>
                 <ThemeSwitcher />
                 <Dialog>
-                    <DialogTrigger className="flex flex-row gap-2 hidden">
+                    <DialogTrigger className="flex flex-row gap-2">
                         <Info />
                         <span className="block lg:hidden font-bold">Information</span>
                     </DialogTrigger>
